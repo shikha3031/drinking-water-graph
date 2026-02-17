@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Water Measurement Tools — ORS Preparation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0f1e;
+      --card: #111827;
+      --border: rgba(255,255,255,0.06);
+      --accent1: #00e5a0;
+      --accent2: #00b8d4;
+      --accent3: #76ffb4;
+      --text: #e8f0fe;
+      --muted: #8899aa;
+      --glow: rgba(0,229,160,0.18);
+      --tick: rgba(255,255,255,0.07);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Grotesk', sans-serif;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(0,229,160,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 90%, rgba(0,184,212,0.07) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: var(--accent1);
+      opacity: 0;
+      animation: floatUp linear infinite;
+    }
+
+    @keyframes floatUp {
+      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+      10%  { opacity: 0.4; }
+      90%  { opacity: 0.1; }
+      100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+    }
+
+    .chart-card {
+      position: relative;
+      z-index: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 48px 52px 36px;
+      width: 640px;
+      max-width: 96vw;
+      box-shadow:
+        0 0 0 1px rgba(0,229,160,0.08),
+        0 32px 80px rgba(0,0,0,0.6),
+        0 0 120px rgba(0,229,160,0.05) inset;
+      backdrop-filter: blur(8px);
+    }
+
+    .chart-card::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px;
+      width: 80px; height: 80px;
+      border-top: 2px solid var(--accent1);
+      border-left: 2px solid var(--accent1);
+      border-radius: 28px 0 0 0;
+      opacity: 0.7;
+    }
+    .chart-card::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; right: -1px;
+      width: 80px; height: 80px;
+      border-bottom: 2px solid var(--accent2);
+      border-right: 2px solid var(--accent2);
+      border-radius: 0 0 28px 0;
+      opacity: 0.5;
+    }
+
+    .chart-header { margin-bottom: 32px; }
+
+    .chart-eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent1);
+      margin-bottom: 10px;
+      opacity: 0;
+      animation: fadeSlideDown 0.6s ease 0.2s forwards;
+    }
+
+    .chart-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--text);
+      line-height: 1.35;
+      opacity: 0;
+      animation: fadeSlideDown 0.6s ease 0.35s forwards;
+    }
+    .chart-title span { color: var(--accent1); }
+
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .chart-wrap { display: flex; height: 280px; position: relative; }
+
+    .y-axis {
+      display: flex;
+      flex-direction: column-reverse;
+      justify-content: space-between;
+      padding-bottom: 2px;
+      width: 42px;
+      flex-shrink: 0;
+    }
+    .y-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+      padding-right: 10px;
+      line-height: 1;
+    }
+
+    .chart-body { flex: 1; position: relative; display: flex; flex-direction: column; }
+
+    .gridlines {
+      position: absolute;
+      inset: 0 0 32px 0;
+      display: flex;
+      flex-direction: column-reverse;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .gridline { width: 100%; height: 1px; background: var(--tick); }
+    .gridline:last-child { background: rgba(255,255,255,0.12); }
+
+    .bars-row {
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      padding: 0 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .bar-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 120px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .bar-tooltip {
+      background: rgba(10,15,30,0.92);
+      border: 1px solid var(--accent1);
+      border-radius: 8px;
+      padding: 5px 11px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent1);
+      white-space: nowrap;
+      margin-bottom: 8px;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+      box-shadow: 0 0 12px rgba(0,229,160,0.15);
+    }
+    .bar-group:hover .bar-tooltip { opacity: 1; transform: translateY(0); }
+
+    .bar-outer {
+      width: 62%;
+      border-radius: 10px 10px 4px 4px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .bar-inner {
+      width: 100%;
+      border-radius: 10px 10px 4px 4px;
+      position: relative;
+      transform-origin: bottom;
+      transform: scaleY(0);
+      transition: transform 1.1s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+      overflow: hidden;
+    }
+
+    .bar-inner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+      transform: translateX(-100%);
+      animation: shimmer 2.4s ease infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { transform: translateX(-100%); }
+      60%  { transform: translateX(100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .bar-inner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 6px,
+        rgba(255,255,255,0.04) 6px, rgba(255,255,255,0.04) 7px
+      );
+    }
+
+    .bar-inner.animate { transform: scaleY(1); }
+
+    .bar-inner.b1 { background: linear-gradient(180deg, #00ffb3, #00c97e); box-shadow: 0 -6px 30px rgba(0,229,160,0.45); }
+    .bar-inner.b2 { background: linear-gradient(180deg, #00e5ff, #00a0bf); box-shadow: 0 -6px 30px rgba(0,184,212,0.45); }
+    .bar-inner.b3 { background: linear-gradient(180deg, #76ffb4, #00e599); box-shadow: 0 -6px 30px rgba(118,255,180,0.4); }
+
+    .bar-inner.b1:hover { box-shadow: 0 -6px 50px rgba(0,229,160,0.8); }
+    .bar-inner.b2:hover { box-shadow: 0 -6px 50px rgba(0,184,212,0.8); }
+    .bar-inner.b3:hover { box-shadow: 0 -6px 50px rgba(118,255,180,0.7); }
+
+    .bar-value {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(0,0,0,0.7);
+      opacity: 0;
+      transition: opacity 0.5s 1s;
+    }
+    .bar-value.show { opacity: 1; }
+
+    .x-labels { display: flex; justify-content: space-around; padding: 0 16px; margin-top: 12px; }
+    .x-label {
+      flex: 1;
+      max-width: 120px;
+      font-size: 11.5px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.35;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    .x-label.show { opacity: 1; transform: translateY(0); }
+
+    .chart-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+    .meta-sample { font-size: 11px; color: var(--muted); letter-spacing: 0.05em; }
+
+    .refresh-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,229,160,0.1);
+      border: 1px solid rgba(0,229,160,0.3);
+      color: var(--accent1);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .refresh-btn:hover { background: rgba(0,229,160,0.2); box-shadow: 0 0 18px rgba(0,229,160,0.2); }
+    .refresh-btn svg { transition: transform 0.5s; }
+    .refresh-btn.spinning svg { transform: rotate(360deg); }
+  </style>
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div class="chart-card">
+  <div class="chart-header">
+    <div class="chart-eyebrow">Clinical Study · Bangladesh · ORS Program</div>
+    <div class="chart-title">
+      Water measurement tools used during<br>
+      <span>ORS Preparation</span>
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <div class="y-axis" id="yAxis"></div>
+    <div class="chart-body">
+      <div class="gridlines" id="gridlines"></div>
+      <div class="bars-row" id="barsRow"></div>
+      <div class="x-labels" id="xLabels"></div>
+    </div>
+  </div>
+
+  <div class="chart-meta">
+    <div class="meta-sample">Sample size <strong style="color:var(--text)">n = 180</strong></div>
+    <button class="refresh-btn" id="refreshBtn" onclick="refreshChart()">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <path d="M1 8C1 4.134 4.134 1 8 1c2.34 0 4.418 1.062 5.793 2.727M15 8c0 3.866-3.134 7-7 7-2.34 0-4.418-1.062-5.793-2.727" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M12.5 1.5L14 4l-2.5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M3.5 14.5L2 12l2.5-.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      REFRESH
+    </button>
+  </div>
+</div>
+
+<script>
+  const baseData = [
+    { label: "Drinking Mug",        pct: 48.3, class: "b1" },
+    { label: "Drinking Glass",      pct: 31.7, class: "b2" },
+    { label: "500 ml Water Bottle", pct: 19.4, class: "b3" },
+  ];
+
+  const Y_MAX = 60, Y_TICKS = [0,10,20,30,40,50,60], CHART_H = 228;
+
+  (function spawnParticles() {
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 22; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random() * 3 + 1.5;
+      p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;
+        animation-delay:${Math.random()*12}s;animation-duration:${10+Math.random()*10}s;
+        background:${Math.random()>0.5?'#00e5a0':'#00b8d4'};`;
+      container.appendChild(p);
+    }
+  })();
+
+  function buildStatic() {
+    const yAxis = document.getElementById('yAxis');
+    const gridlines = document.getElementById('gridlines');
+    yAxis.innerHTML = ''; gridlines.innerHTML = '';
+    Y_TICKS.forEach(t => {
+      const lbl = document.createElement('div');
+      lbl.className = 'y-label'; lbl.textContent = t + '%';
+      yAxis.appendChild(lbl);
+      const gl = document.createElement('div');
+      gl.className = 'gridline';
+      gridlines.appendChild(gl);
+    });
+  }
+
+  function animateValue(el, from, to, duration) {
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      el.textContent = (from + (to - from) * ease).toFixed(1) + '%';
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function buildBars(data, direction) {
+    const barsRow = document.getElementById('barsRow');
+    const xLabels = document.getElementById('xLabels');
+    barsRow.innerHTML = ''; xLabels.innerHTML = '';
+
+    data.forEach((d, i) => {
+      const heightPx = Math.round((d.pct / Y_MAX) * CHART_H);
+      const group = document.createElement('div');
+      group.className = 'bar-group'; group.style.opacity = 0;
+
+      const tooltip = document.createElement('div');
+      tooltip.className = 'bar-tooltip';
+      tooltip.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:currentColor;margin-right:5px;vertical-align:middle"></span>${d.label}`;
+
+      const outer = document.createElement('div');
+      outer.className = 'bar-outer'; outer.style.height = heightPx + 'px';
+
+      const inner = document.createElement('div');
+      inner.className = `bar-inner ${d.class}`; inner.style.height = '100%';
+      inner.style.transformOrigin = direction === 'down' ? 'top' : 'bottom';
+
+      const valEl = document.createElement('div');
+      valEl.className = 'bar-value'; valEl.textContent = '0%';
+
+      inner.appendChild(valEl); outer.appendChild(inner);
+      group.appendChild(tooltip); group.appendChild(outer);
+      barsRow.appendChild(group);
+
+      const xLbl = document.createElement('div');
+      xLbl.className = 'x-label'; xLbl.textContent = d.label;
+      xLabels.appendChild(xLbl);
+
+      setTimeout(() => {
+        group.style.transition = 'opacity 0.4s'; group.style.opacity = 1;
+        inner.classList.add('animate');
+        setTimeout(() => {
+          valEl.classList.add('show');
+          animateValue(valEl, 0, d.pct, 900);
+          xLbl.classList.add('show');
+        }, 700);
+      }, 200 + i * 180);
+    });
+  }
+
+  let isUp = true;
+  function refreshChart() {
+    const btn = document.getElementById('refreshBtn');
+    btn.classList.add('spinning');
+    setTimeout(() => btn.classList.remove('spinning'), 500);
+    isUp = !isUp;
+    buildBars(baseData, isUp ? 'up' : 'down');
+  }
+
+  buildStatic();
+  buildBars(baseData, 'up');
+</script>
+</body>
+</html>
